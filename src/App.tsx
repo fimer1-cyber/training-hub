@@ -30,7 +30,7 @@ export default function App() {
   const [saving, setSaving] = useState(false);
 
   const configured = Boolean(supabase);
-  const filtered = useMemo(() => trainings.filter(t =>
+  const filtered = useMemo(() => trainings.filter(t => t.status === "published" &&
     (!intensity || t.intensity === intensity) && (!muscle || t.muscle_group === muscle)
   ), [trainings, intensity, muscle]);
 
@@ -53,7 +53,7 @@ export default function App() {
     });
     const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session?.user) void checkAdmin(session.user.id, session.user.email ?? "");
-      else { setUserEmail(""); setIsAdmin(false); }
+      else { setUserEmail(""); setIsAdmin(false); void loadTrainings(false); }
     });
     return () => listener.subscription.unsubscribe();
   }, []);
