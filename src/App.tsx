@@ -97,8 +97,8 @@ export default function App() {
     let fileName = editing?.file_name ?? null;
     let fileType = editing?.file_type ?? null;
     if (file) {
-      const safeName = file.name.replace(/[^\p{L}\p{N}._-]/gu, "_");
-      const path = `${crypto.randomUUID()}-${safeName}`;
+      const extension = file.name.match(/\.[a-zA-Z0-9]+$/)?.[0] ?? "";
+      const path = `${crypto.randomUUID()}${extension.toLowerCase()}`;
       const { error: uploadError } = await supabase.storage.from("training-files").upload(path, file, { upsert: false });
       if (uploadError) { setNotice("Не удалось загрузить файл. Проверьте права Storage."); setSaving(false); return; }
       filePath = path; fileName = file.name; fileType = file.type || "application/octet-stream";
