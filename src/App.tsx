@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { ArrowLeft, ArrowRight, Dumbbell, Flame, ShieldCheck, Upload, LogOut, Plus, Pencil, Trash2, FileText, X, CheckCircle2 } from "lucide-react";
 import { supabase, ADMIN_EMAIL } from "./lib/supabase";
 
@@ -34,10 +34,12 @@ export default function App() {
     (!intensity || t.intensity === intensity) && (!muscle || t.muscle_group === muscle)
   ), [trainings, intensity, muscle]);
 
-  async function loadTrainings() {
+  async function loadTrainings(includeDrafts = false) {
     if (!supabase) { setLoading(false); return; }
     setLoading(true); setError("");
-    const { data, error } = await supabase.from("training_programs").select("*").eq("status", "published").order("created_at", { ascending: false });
+    let query = supabase.from("training_programs").select("*").order("created_at", { ascending: false });
+    if (!includeDrafts) query = query.eq("status", "published");
+    const { data, error } = await query;
     if (error) setError("Не удалось загрузить тренировки. Проверьте подключение к базе данных.");
     else setTrainings((data ?? []) as Training[]);
     setLoading(false);
@@ -60,7 +62,9 @@ export default function App() {
     if (!supabase) return;
     setUserEmail(userMail);
     const { data } = await supabase.from("admin_users").select("user_id").eq("user_id", userId).maybeSingle();
-    setIsAdmin(Boolean(data) && userMail.toLowerCase() === ADMIN_EMAIL.toLowerCase());
+    const allowed = Boolean(data) && userMail.toLowerCase() === ADMIN_EMAIL.toLowerCase();
+    setIsAdmin(allowed);
+    await loadTrainings(allowed);
   }
 
   async function sendLogin() {
@@ -83,7 +87,7 @@ export default function App() {
     setFile(null);
   }
 
-  async function saveTraining(e: React.FormEvent) {
+  async function saveTraining(e: FormEvent) {
     e.preventDefault();
     if (!supabase || !isAdmin) return;
     setSaving(true); setNotice("");
